@@ -288,6 +288,7 @@ function flash(msg) {
 
 async function activate(entry) {
   const action = entry.actions?.[actionIndex]?.id;
+  actionIndex = 0;
   if (entry.kind === "tab") {
     if (action === "close") {
       await chrome.tabs.remove(entry.tabId);
@@ -384,6 +385,7 @@ function cycleAction(delta) {
 
 searchEl.addEventListener("input", () => {
   setSelected(0);
+  actionIndex = 0; // a new query re-arms the default action
   applyFilter();
 });
 
