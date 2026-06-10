@@ -1,0 +1,108 @@
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  box-sizing: border-box;
+  width: 360px;
+  margin: 0;
+  padding: 14px;
+  font: 13px/1.5 -apple-system, "Segoe UI", system-ui, sans-serif;
+  background: Canvas;
+  color: CanvasText;
+}
+
+h1 {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+
+p {
+  margin: 0 0 10px;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+code {
+  font-size: 11px;
+}
+
+#add-input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
+  border-radius: 6px;
+  font-size: 13px;
+  background: Field;
+  color: FieldText;
+  outline: none;
+}
+
+#add-input:focus {
+  border-color: #4a8af4;
+}
+
+#host-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  max-height: 300px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, CanvasText 30%, transparent) transparent;
+}
+
+#host-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+}
+
+#host-list input {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 13px;
+  background: transparent;
+  color: inherit;
+  outline: none;
+}
+
+#host-list input:hover {
+  border-color: color-mix(in srgb, CanvasText 15%, transparent);
+}
+
+#host-list input:focus {
+  border-color: #4a8af4;
+  background: Field;
+  color: FieldText;
+}
+
+#host-list button {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  opacity: 0.5;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+#host-list button:hover {
+  opacity: 1;
+  background: color-mix(in srgb, CanvasText 10%, transparent);
+}
+
+#empty {
+  margin-top: 12px;
+  font-size: 12px;
+  opacity: 0.55;
+  text-align: center;
+}

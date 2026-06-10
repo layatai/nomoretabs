@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <h1>Always switch to existing tab</h1>
+  <p>
+    For these sites, opening the site in a new tab switches to the
+    already-open tab instead (the new tab is closed). An entry like
+    <code>google.com</code> also covers its subdomains.
+  </p>
+  <form id="add-form">
+    <input
+      id="add-input"
+      type="text"
+      placeholder="example.com — Enter to add"
+      autocomplete="off"
+      spellcheck="false"
+    />
+  </form>
+  <ul id="host-list"></ul>
+  <div id="empty">No sites yet. Add one above.</div>
+  <script src="options.js"></script>
+</body>
+</html>

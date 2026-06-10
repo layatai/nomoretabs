@@ -1,0 +1,27 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate manifest and JS syntax
+        run: |
+          jq -e .manifest_version manifest.json
+          for f in *.js; do node --check "$f"; done
+
+      - name: Build extension zip
+        run: ./scripts/build.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nomoretabs
+          path: dist/*.zip

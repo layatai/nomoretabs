@@ -1,0 +1,144 @@
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  width: 360px;
+  margin: 0;
+  padding: 10px;
+  font: 13px/1.4 -apple-system, "Segoe UI", system-ui, sans-serif;
+  background: Canvas;
+  color: CanvasText;
+}
+
+#search {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
+  border-radius: 8px;
+  font-size: 13px;
+  background: Field;
+  color: FieldText;
+  outline: none;
+}
+
+#search:focus {
+  border-color: #4a8af4;
+}
+
+#list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Slim overlay-style scrollbar: transparent track, thumb only while
+   hovering the list, no reserved gutter width. */
+#list::-webkit-scrollbar {
+  width: 6px;
+}
+
+#list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#list::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+}
+
+#list:hover::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, CanvasText 30%, transparent);
+}
+
+#list .header {
+  padding: 8px 8px 3px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.5;
+  user-select: none;
+}
+
+#list .item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#list .item:hover {
+  background: color-mix(in srgb, CanvasText 8%, transparent);
+}
+
+#list .item.selected {
+  background: #4a8af4;
+  color: #fff;
+}
+
+#list .favicon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+#list .glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+#list .text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#list .label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#list .sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+#list .item.selected .sub {
+  opacity: 0.85;
+}
+
+#list .count {
+  flex-shrink: 0;
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 9px;
+  background: color-mix(in srgb, CanvasText 12%, transparent);
+}
+
+#list .item.selected .count {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+#status {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, CanvasText 12%, transparent);
+  font-size: 11px;
+  opacity: 0.65;
+  min-height: 14px;
+  text-align: center;
+}
