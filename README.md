@@ -28,10 +28,11 @@ all with site favicons and filtered live as you type:
 | **Open** | when the query looks like a URL | open it in a new tab |
 
 - The status bar always previews exactly what `Enter` will do.
-- **Inline autocomplete**: as you type, a ghost suffix completes the
-  hostname from your open tabs and browser history (`google.` → `google.com`,
-  most-visited first). Accept it with `Tab` or `→`; the **Open** row uses
-  the completed host.
+- **Inline autocomplete**, like the address bar: as you type, the rest of
+  the best-matching hostname is filled in as selected text (`v` →
+  `v∣nexpress.net`), completed from your open tabs and browser history
+  (most-visited first). Keep typing to replace it, `Tab` or `→` to accept,
+  `Backspace` to drop it. The **Open** row follows the completion.
 - The **Open** row completes URLs terminal-style: `github/foo` →
   `https://github.com/foo` (a bare word gets `.com`); schemes and ports
   are kept as typed.

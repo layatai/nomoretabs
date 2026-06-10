@@ -26,65 +26,51 @@ let filtered = [];
 let selectedIndex = 0;
 let actionIndex = 0; // which of the selected row's actions is armed
 let lastMouse = { x: -1, y: -1 };
-let hintSuffix = ""; // ghost completion after the typed text
-let hintToken = 0;
+let acToken = 0;
 
-const hintPrefixEl = document.getElementById("hint-prefix");
-const hintSuffixEl = document.getElementById("hint-suffix");
-
-function renderHint() {
-  hintPrefixEl.textContent = hintSuffix ? searchEl.value : "";
-  hintSuffixEl.textContent = hintSuffix;
-}
-
-// Complete the typed text into a hostname, like terminal autosuggestions.
-// Candidates: open tabs' hostnames first, then browser history by visits.
-async function updateHint() {
-  const token = ++hintToken;
-  const q = searchEl.value.trim().toLowerCase();
-  let suffix = "";
-  if (q && !q.startsWith("/") && !/[\s/]/.test(q)) {
-    const candidates = items
-      .filter((e) => e.kind === "site")
-      .map((e) => e.host);
-    try {
-      const hist = await chrome.history.search({
-        text: q,
-        maxResults: 50,
-        startTime: 0,
-      });
-      hist.sort((a, b) => (b.visitCount || 0) - (a.visitCount || 0));
-      for (const h of hist) {
-        try {
-          candidates.push(new URL(h.url).hostname);
-        } catch {}
-      }
-    } catch {}
-    outer: for (const c of candidates) {
-      for (const host of [c, c.replace(/^www\./, "")]) {
-        if (host.toLowerCase().startsWith(q) && host.length > q.length) {
-          suffix = host.slice(q.length);
-          break outer;
-        }
+// Omnibox-style inline autocomplete: complete the typed text into a
+// hostname and insert the completion as SELECTED text, so typing replaces
+// it and Enter uses it. Candidates: open tabs' hostnames first, then
+// browser history by visit count.
+async function autocomplete() {
+  const token = ++acToken;
+  const typed = searchEl.value;
+  const q = typed.toLowerCase();
+  if (!q || q.startsWith("/") || /[\s/]/.test(q)) return;
+  if (
+    searchEl.selectionStart !== typed.length ||
+    searchEl.selectionEnd !== typed.length
+  ) {
+    return; // only complete when the caret sits at the end
+  }
+  const candidates = items.filter((e) => e.kind === "site").map((e) => e.host);
+  try {
+    const hist = await chrome.history.search({
+      text: q,
+      maxResults: 50,
+      startTime: 0,
+    });
+    hist.sort((a, b) => (b.visitCount || 0) - (a.visitCount || 0));
+    for (const h of hist) {
+      try {
+        candidates.push(new URL(h.url).hostname);
+      } catch {}
+    }
+  } catch {}
+  let match = "";
+  outer: for (const c of candidates) {
+    for (const host of [c, c.replace(/^www\./, "")]) {
+      if (host.toLowerCase().startsWith(q) && host.length > q.length) {
+        match = host;
+        break outer;
       }
     }
   }
-  if (token !== hintToken) return; // a newer keystroke superseded this
-  hintSuffix = suffix;
-  renderHint();
-  applyFilter(); // the Open row uses the completed host
-}
-
-function acceptHint() {
-  if (!hintSuffix) return false;
-  searchEl.value += hintSuffix;
-  hintSuffix = "";
-  renderHint();
-  setSelected(0);
-  actionIndex = 0;
-  applyFilter();
-  updateHint();
-  return true;
+  if (token !== acToken || !match) return;
+  if (searchEl.value !== typed) return; // user typed meanwhile
+  searchEl.value = typed + match.slice(q.length);
+  searchEl.setSelectionRange(typed.length, searchEl.value.length);
+  applyFilter(); // list and Open row follow the completed host
 }
 
 function setSelected(i) {
@@ -246,7 +232,7 @@ function applyFilter() {
             (e.sub || "").toLowerCase().includes(raw)
         )
       : items;
-    const url = raw && resolveOpenUrl(searchEl.value.trim() + hintSuffix);
+    const url = raw && resolveOpenUrl(searchEl.value.trim());
     if (url) {
       filtered = [
         ...filtered,
@@ -424,15 +410,11 @@ async function activate(entry) {
         ? await TabOps.closeByMainDomain(entry.host)
         : await TabOps.closeByHostname(entry.host);
     searchEl.value = "";
-    hintSuffix = "";
-    renderHint();
     await refresh();
     flash(`Closed ${closed} tab${closed === 1 ? "" : "s"} on ${entry.host}`);
     return;
   }
   searchEl.value = ""; // leave slash mode after running a command
-  hintSuffix = "";
-  renderHint();
   if (entry.id === "tabgroups") {
     const grouped = await TabOps.groupIntoTabGroups(await currentGroups());
     await refresh();
@@ -492,11 +474,12 @@ function cycleAction(delta) {
   return true;
 }
 
-searchEl.addEventListener("input", () => {
+searchEl.addEventListener("input", (e) => {
   setSelected(0);
   actionIndex = 0; // a new query re-arms the default action
   applyFilter();
-  updateHint();
+  // like the omnibox: never re-complete while deleting or composing (IME)
+  if (!e.inputType?.startsWith("delete") && !e.isComposing) autocomplete();
 });
 
 searchEl.addEventListener("keydown", (e) => {
@@ -507,17 +490,13 @@ searchEl.addEventListener("keydown", (e) => {
     e.preventDefault();
     moveSelection(-1);
   } else if (e.key === "Tab") {
-    if (acceptHint()) e.preventDefault();
-  } else if (e.key === "ArrowRight") {
-    const atEnd =
-      searchEl.selectionStart === searchEl.value.length &&
-      searchEl.selectionEnd === searchEl.value.length;
-    if (atEnd && hintSuffix) {
+    // accept the inline completion (collapse the selection to the end)
+    if (searchEl.selectionStart !== searchEl.selectionEnd) {
       e.preventDefault();
-      acceptHint();
-    } else if (cycleAction(1)) {
-      e.preventDefault();
+      searchEl.setSelectionRange(searchEl.value.length, searchEl.value.length);
     }
+  } else if (e.key === "ArrowRight") {
+    if (cycleAction(1)) e.preventDefault();
   } else if (e.key === "ArrowLeft") {
     if (cycleAction(-1)) e.preventDefault();
   } else if (e.key === "Enter") {
