@@ -8,6 +8,8 @@ everything into tab groups.
 
 ![No More Tabs command palette demo](demo.gif)
 
+> ⌨️ `⌘⇧X` open palette · type to filter · `↑` `↓` select · `←` `→` choose action · `↵` run · `Esc` close
+
 *([mp4 version](demo.mp4) for full quality.)*
 
 ## Features
@@ -33,6 +35,8 @@ all with site favicons and filtered live as you type:
 ### Slash commands
 
 ![Slash commands demo](demo-slash.gif)
+
+> ⌨️ `⌘⇧X` open palette · `/` list commands · type alias (`dedupe`, `group`, …) · `↵` run
 
 *([mp4 version](demo-slash.mp4) for full quality.)*
 
