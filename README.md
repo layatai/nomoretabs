@@ -1,69 +1,98 @@
 # No More Tabs
 
-A Chrome/Brave extension to bulk-close tabs by hostname, close duplicate
-tabs, or keep only the latest tab per hostname.
+A Chrome/Brave extension that tames tab overload: a keyboard-first
+command palette to close tabs by site, switch tabs, dedupe, and organize
+everything into tab groups.
+
+## Demo
+
+![No More Tabs command palette demo](demo.gif)
+
+*([mp4 version](demo.mp4) for full quality.)*
 
 ## Features
 
-- **Command palette** — one search box, one list, no buttons. Press
-  `Cmd+Shift+X` (Mac) / `Ctrl+Shift+X` (Windows/Linux) or click the
-  toolbar icon. The list has three sections, all filtered as you type:
-  - **Sites** — favicon + `hostname (count)`. Actions: close all tabs,
-    group them into a Chrome tab group, or keep only the latest tab.
-  - **Tabs** — all tabs, most recently used first, with favicon, title,
-    and hostname. Actions: switch to the tab, or close it.
-  - **Commands** — *Close duplicated tabs*, *Keep single tab per site*,
-    *Group all tabs by site* (one Chrome tab group per site), *Ungroup
-    all tabs*, *Merge all windows* (move every tab into the current
-    window), *Group sites by main domain / hostname* (toggles whether
-    sites are grouped per subdomain or per registrable domain, e.g.
-    `mail.google.com` + `docs.google.com` → `google.com`; remembered),
-    and *Preferences…*.
+### Command palette
 
-  `←` / `→` cycle through the selected row's actions (when the caret is
-  at the edge of the search text), `Enter` runs the armed action, and the
-  status bar at the bottom always shows what `Enter` will do. Typing `/`
-  enters slash-command mode — only commands are listed, matched by their
-  alias (`/dedupe`, `/single`, `/group`, `/ungroup`, `/merge`, `/domain`,
-  `/prefs`).
-- **Go-to-tab hotkey** — `Cmd+Shift+Space` (Mac) / `Ctrl+Shift+Space`
-  opens the same palette with the **Tabs** section on top for quick
-  switching.
-- **Always switch to existing tab** — in Preferences (the *Preferences…*
-  command in the palette, or the extension's Options page) you can keep
-  an editable list of sites. When a tab navigates into one of those sites
-  and a tab for it is already open, the existing tab is focused (and
-  pointed at the requested URL) and the duplicate closes. Entries cover
-  their subdomains (`google.com` matches `mail.google.com`). Click an
-  entry to edit it; clear it or press ✕ to remove. The list syncs via
-  `chrome.storage.sync`.
-- **Right-click menu** — right-click any page (or the toolbar icon) →
-  **No More Tabs**:
-  - **Close all by hostname** — submenu listing `hostname (x)` for every
-    open hostname; click one to close all its tabs.
-  - **Close all by domain** — same, but grouped by main domain
-    (`google.com` covers all its subdomains).
-  - **Close duplicated** — closes tabs whose exact URL is open more than
-    once, keeping the most recently used one.
-  - **Keep single tab per hostname** — keeps only the latest tab per
-    hostname, closes the rest.
-  - **Group all tabs by hostname** — one Chrome tab group per hostname.
-  - **Ungroup all tabs** / **Merge all windows**.
+One search box, one list, no buttons. Press `Cmd+Shift+X` (Mac) /
+`Ctrl+Shift+X` (Windows/Linux) or click the toolbar icon. Three sections,
+all with site favicons and filtered live as you type:
 
-Pinned tabs are never closed. The active tab is always the one kept when
-deduplicating.
+| Section | Shows | Actions (`←` `→` to choose, `Enter` to run) |
+|---|---|---|
+| **Sites** | favicon + `hostname (count)` | Close all · Group tabs · Keep latest |
+| **Tabs** | all tabs, most recently used first | Switch · Close tab |
+| **Commands** | global operations | run |
+
+- The status bar always previews exactly what `Enter` will do.
+- `↑` `↓` navigate; `←` `→` cycle the selected row's action (when the
+  caret is at the edge of the search text); `Esc` closes.
+- `Cmd+Shift+Space` / `Ctrl+Shift+Space` opens the same palette with the
+  **Tabs** section first, for quick switching.
+
+### Slash commands
+
+Type `/` to list only commands, matched by alias:
+
+| Command | What it does |
+|---|---|
+| `/dedupe` | Close duplicated tabs (same exact URL, keeps the latest) |
+| `/single` | Keep a single (latest) tab per site, close the rest |
+| `/group` | Group all tabs into Chrome tab groups, one per site |
+| `/ungroup` | Remove every tab group |
+| `/merge` | Move all tabs from every window into the current window |
+| `/domain` | Toggle grouping sites by main domain vs hostname (`mail.google.com` + `docs.google.com` → `google.com`) |
+| `/prefs` | Open Preferences |
+
+### Right-click menu
+
+Right-click any page or the toolbar icon → **No More Tabs**: close all by
+hostname or by main domain (submenus with live `site (count)` entries),
+close duplicated, keep single tab per hostname, group all tabs by
+hostname, ungroup all, and merge all windows.
+
+### Always switch to existing tab
+
+In **Preferences** keep an editable list of sites. When a tab navigates
+into a listed site and a tab for it is already open, the existing tab is
+focused (and pointed at the requested URL) and the duplicate closes.
+Entries cover their subdomains; the list syncs via `chrome.storage.sync`.
+
+### Safety rules
+
+- Pinned tabs are never closed, grouped, or unpinned.
+- "Latest" means the most recently used tab; the active tab always wins.
 
 ## Install
 
-1. Open `chrome://extensions` (or `brave://extensions`).
-2. Enable **Developer mode** (top right).
-3. Click **Load unpacked** and select this folder.
+### From a release
 
-To change the hotkey: `chrome://extensions/shortcuts`.
+1. Download the zip from the [latest release](https://github.com/layatai/nomoretabs/releases/latest)
+   and unzip it.
+2. Open `chrome://extensions` (or `brave://extensions`).
+3. Enable **Developer mode** (top right).
+4. Click **Load unpacked** and select the unzipped folder.
 
-## Files
+### From source
 
-- `manifest.json` — Manifest V3 config
-- `background.js` — service worker; builds the context menus and handles clicks
-- `tabops.js` — shared tab grouping/closing logic
-- `popup.html` / `popup.css` / `popup.js` — the command palette popup
+Clone this repo and load the folder the same way (steps 2–4 above).
+
+Customize the hotkeys at `chrome://extensions/shortcuts`.
+
+## Development
+
+No build step — plain Manifest V3, vanilla JS.
+
+| File | Role |
+|---|---|
+| `manifest.json` | MV3 config, permissions, hotkeys |
+| `background.js` | service worker: context menus, enforced switch-to-tab, hotkey routing |
+| `tabops.js` | shared tab grouping/closing/merging logic |
+| `popup.html/js/css` | the command palette |
+| `options.html/js/css` | Preferences page |
+| `scripts/build.sh` | packages `dist/nomoretabs-<version>.zip` |
+
+Releases are automated: pushing a `v*` tag matching the `manifest.json`
+version builds the zip and publishes a GitHub release
+(`.github/workflows/release.yml`); every push to `main` builds an
+artifact (`build.yml`).
