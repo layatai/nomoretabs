@@ -16,6 +16,7 @@ const SECTION_TITLES = {
   site: "Sites — Enter closes all tabs",
   tab: "Tabs — Enter switches",
   command: "Commands",
+  open: "Open",
 };
 
 let groupMode = localStorage.getItem("nmt-mode") === "domain" ? "domain" : "host";
@@ -56,7 +57,21 @@ const SITE_ACTIONS = [
 const TAB_ACTIONS = [
   { id: "switch", label: "Switch" },
   { id: "close", label: "Close tab" },
+  { id: "dup", label: "Duplicate" },
 ];
+
+// terminal-style completion: "github.com/foo" -> https://github.com/foo,
+// "localhost:3000" stays, a bare word gets a .com suffix
+function resolveOpenUrl(q) {
+  if (/\s/.test(q)) return null;
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(q)) return q;
+  const host = q.split(/[/?#]/)[0];
+  if (!host) return null;
+  if (!host.includes(".") && !host.includes(":")) {
+    return "https://" + q.replace(host, host + ".com");
+  }
+  return "https://" + q;
+}
 
 async function refresh() {
   const groups = await currentGroups();
@@ -171,6 +186,19 @@ function applyFilter() {
             (e.sub || "").toLowerCase().includes(raw)
         )
       : items;
+    const url = raw && resolveOpenUrl(searchEl.value.trim());
+    if (url) {
+      filtered = [
+        ...filtered,
+        {
+          kind: "open",
+          label: `Open ${url}`,
+          sub: "in a new tab",
+          glyph: "+",
+          url,
+        },
+      ];
+    }
   }
   setSelected(Math.min(selectedIndex, Math.max(0, filtered.length - 1)));
   render();
@@ -273,7 +301,14 @@ function updateStatus() {
           ? `↵  Keep latest tab on ${entry.host}, close the rest`
           : `↵  Close ${n} tab${n === 1 ? "" : "s"} on ${entry.host}`;
   } else if (entry.kind === "tab") {
-    text = action === "close" ? "↵  Close this tab" : "↵  Switch to this tab";
+    text =
+      action === "close"
+        ? "↵  Close this tab"
+        : action === "dup"
+          ? "↵  Duplicate this tab"
+          : "↵  Switch to this tab";
+  } else if (entry.kind === "open") {
+    text = `↵  Open ${entry.url} in a new tab`;
   } else {
     text = "↵  Run command";
   }
@@ -289,11 +324,21 @@ function flash(msg) {
 async function activate(entry) {
   const action = entry.actions?.[actionIndex]?.id;
   actionIndex = 0;
+  if (entry.kind === "open") {
+    await chrome.tabs.create({ url: entry.url });
+    window.close();
+    return;
+  }
   if (entry.kind === "tab") {
     if (action === "close") {
       await chrome.tabs.remove(entry.tabId);
       await refresh();
       flash("Closed tab");
+      return;
+    }
+    if (action === "dup") {
+      await chrome.tabs.duplicate(entry.tabId);
+      window.close();
       return;
     }
     await chrome.tabs.update(entry.tabId, { active: true });

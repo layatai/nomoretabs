@@ -23,10 +23,14 @@ all with site favicons and filtered live as you type:
 | Section | Shows | Actions (`←` `→` to choose, `Enter` to run) |
 |---|---|---|
 | **Sites** | favicon + `hostname (count)` | Close all · Group tabs · Keep latest |
-| **Tabs** | all tabs, most recently used first | Switch · Close tab |
+| **Tabs** | all tabs, most recently used first | Switch · Close tab · Duplicate |
 | **Commands** | global operations | run |
+| **Open** | when the query looks like a URL | open it in a new tab |
 
 - The status bar always previews exactly what `Enter` will do.
+- The **Open** row completes URLs terminal-style: `github/foo` →
+  `https://github.com/foo` (a bare word gets `.com`); schemes and ports
+  are kept as typed.
 - `↑` `↓` navigate; `←` `→` cycle the selected row's action (when the
   caret is at the edge of the search text); `Esc` closes.
 - `Cmd+Shift+Space` / `Ctrl+Shift+Space` opens the same palette with the
