@@ -32,6 +32,10 @@ all with site favicons and filtered live as you type:
 
 ### Slash commands
 
+![Slash commands demo](demo-slash.gif)
+
+*([mp4 version](demo-slash.mp4) for full quality.)*
+
 Type `/` to list only commands, matched by alias:
 
 | Command | What it does |
