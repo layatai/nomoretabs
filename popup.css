@@ -11,13 +11,17 @@ body {
   color: CanvasText;
 }
 
+#search-wrap {
+  position: relative;
+}
+
 #search {
   box-sizing: border-box;
   width: 100%;
   padding: 9px 11px;
   border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
   border-radius: 8px;
-  font-size: 13px;
+  font: 13px/1.4 -apple-system, "Segoe UI", system-ui, sans-serif;
   background: Field;
   color: FieldText;
   outline: none;
@@ -25,6 +29,27 @@ body {
 
 #search:focus {
   border-color: #4a8af4;
+}
+
+/* ghost completion overlaid on the input; prefix mirrors the typed text
+   invisibly so the suffix lines up with the caret */
+#hint {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  right: 12px;
+  font: 13px/1.4 -apple-system, "Segoe UI", system-ui, sans-serif;
+  white-space: pre;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+#hint-prefix {
+  color: transparent;
+}
+
+#hint-suffix {
+  color: color-mix(in srgb, FieldText 45%, transparent);
 }
 
 #list {

@@ -26,6 +26,66 @@ let filtered = [];
 let selectedIndex = 0;
 let actionIndex = 0; // which of the selected row's actions is armed
 let lastMouse = { x: -1, y: -1 };
+let hintSuffix = ""; // ghost completion after the typed text
+let hintToken = 0;
+
+const hintPrefixEl = document.getElementById("hint-prefix");
+const hintSuffixEl = document.getElementById("hint-suffix");
+
+function renderHint() {
+  hintPrefixEl.textContent = hintSuffix ? searchEl.value : "";
+  hintSuffixEl.textContent = hintSuffix;
+}
+
+// Complete the typed text into a hostname, like terminal autosuggestions.
+// Candidates: open tabs' hostnames first, then browser history by visits.
+async function updateHint() {
+  const token = ++hintToken;
+  const q = searchEl.value.trim().toLowerCase();
+  let suffix = "";
+  if (q && !q.startsWith("/") && !/[\s/]/.test(q)) {
+    const candidates = items
+      .filter((e) => e.kind === "site")
+      .map((e) => e.host);
+    try {
+      const hist = await chrome.history.search({
+        text: q,
+        maxResults: 50,
+        startTime: 0,
+      });
+      hist.sort((a, b) => (b.visitCount || 0) - (a.visitCount || 0));
+      for (const h of hist) {
+        try {
+          candidates.push(new URL(h.url).hostname);
+        } catch {}
+      }
+    } catch {}
+    outer: for (const c of candidates) {
+      for (const host of [c, c.replace(/^www\./, "")]) {
+        if (host.toLowerCase().startsWith(q) && host.length > q.length) {
+          suffix = host.slice(q.length);
+          break outer;
+        }
+      }
+    }
+  }
+  if (token !== hintToken) return; // a newer keystroke superseded this
+  hintSuffix = suffix;
+  renderHint();
+  applyFilter(); // the Open row uses the completed host
+}
+
+function acceptHint() {
+  if (!hintSuffix) return false;
+  searchEl.value += hintSuffix;
+  hintSuffix = "";
+  renderHint();
+  setSelected(0);
+  actionIndex = 0;
+  applyFilter();
+  updateHint();
+  return true;
+}
 
 function setSelected(i) {
   if (i !== selectedIndex) actionIndex = 0;
@@ -186,7 +246,7 @@ function applyFilter() {
             (e.sub || "").toLowerCase().includes(raw)
         )
       : items;
-    const url = raw && resolveOpenUrl(searchEl.value.trim());
+    const url = raw && resolveOpenUrl(searchEl.value.trim() + hintSuffix);
     if (url) {
       filtered = [
         ...filtered,
@@ -364,11 +424,15 @@ async function activate(entry) {
         ? await TabOps.closeByMainDomain(entry.host)
         : await TabOps.closeByHostname(entry.host);
     searchEl.value = "";
+    hintSuffix = "";
+    renderHint();
     await refresh();
     flash(`Closed ${closed} tab${closed === 1 ? "" : "s"} on ${entry.host}`);
     return;
   }
   searchEl.value = ""; // leave slash mode after running a command
+  hintSuffix = "";
+  renderHint();
   if (entry.id === "tabgroups") {
     const grouped = await TabOps.groupIntoTabGroups(await currentGroups());
     await refresh();
@@ -432,6 +496,7 @@ searchEl.addEventListener("input", () => {
   setSelected(0);
   actionIndex = 0; // a new query re-arms the default action
   applyFilter();
+  updateHint();
 });
 
 searchEl.addEventListener("keydown", (e) => {
@@ -441,8 +506,18 @@ searchEl.addEventListener("keydown", (e) => {
   } else if (e.key === "ArrowUp") {
     e.preventDefault();
     moveSelection(-1);
+  } else if (e.key === "Tab") {
+    if (acceptHint()) e.preventDefault();
   } else if (e.key === "ArrowRight") {
-    if (cycleAction(1)) e.preventDefault();
+    const atEnd =
+      searchEl.selectionStart === searchEl.value.length &&
+      searchEl.selectionEnd === searchEl.value.length;
+    if (atEnd && hintSuffix) {
+      e.preventDefault();
+      acceptHint();
+    } else if (cycleAction(1)) {
+      e.preventDefault();
+    }
   } else if (e.key === "ArrowLeft") {
     if (cycleAction(-1)) e.preventDefault();
   } else if (e.key === "Enter") {

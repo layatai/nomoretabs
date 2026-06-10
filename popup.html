@@ -5,13 +5,17 @@
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
-  <input
-    id="search"
-    type="text"
-    placeholder="Search sites and tabs, / for commands…"
-    autocomplete="off"
-    spellcheck="false"
-  />
+  <div id="search-wrap">
+    <input
+      id="search"
+      type="text"
+      placeholder="Search sites and tabs, / for commands…"
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <span id="hint" aria-hidden="true"
+      ><span id="hint-prefix"></span><span id="hint-suffix"></span></span>
+  </div>
   <ul id="list"></ul>
   <div id="status"></div>
   <script src="tabops.js"></script>

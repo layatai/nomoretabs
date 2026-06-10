@@ -3,7 +3,7 @@
   "name": "No More Tabs",
   "version": "1.1.0",
   "description": "Close tabs by hostname, close duplicates, or keep a single tab per hostname. Hotkey opens a command palette.",
-  "permissions": ["tabs", "tabGroups", "contextMenus", "favicon", "storage"],
+  "permissions": ["tabs", "tabGroups", "contextMenus", "favicon", "storage", "history"],
   "background": {
     "service_worker": "background.js"
   },
