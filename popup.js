@@ -24,6 +24,7 @@ let items = [];
 let filtered = [];
 let selectedIndex = 0;
 let actionIndex = 0; // which of the selected row's actions is armed
+let lastMouse = { x: -1, y: -1 };
 
 function setSelected(i) {
   if (i !== selectedIndex) actionIndex = 0;
@@ -236,7 +237,12 @@ function render() {
     }
 
     li.addEventListener("click", () => activate(entry));
-    li.addEventListener("mousemove", () => {
+    li.addEventListener("mousemove", (e) => {
+      // Chrome re-fires mousemove on the element under a stationary
+      // cursor whenever the list DOM is replaced (e.g. after arrow-key
+      // re-renders); only treat real pointer movement as hover.
+      if (lastMouse.x === e.screenX && lastMouse.y === e.screenY) return;
+      lastMouse = { x: e.screenX, y: e.screenY };
       if (selectedIndex !== i) {
         setSelected(i);
         render();
