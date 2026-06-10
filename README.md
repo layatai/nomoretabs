@@ -8,16 +8,24 @@ tabs, or keep only the latest tab per hostname.
 - **Command palette** — one search box, one list, no buttons. Press
   `Cmd+Shift+X` (Mac) / `Ctrl+Shift+X` (Windows/Linux) or click the
   toolbar icon. The list has three sections, all filtered as you type:
-  - **Sites** — favicon + `hostname (count)`; `Enter` closes every tab
-    for that site.
+  - **Sites** — favicon + `hostname (count)`. Actions: close all tabs,
+    group them into a Chrome tab group, or keep only the latest tab.
   - **Tabs** — all tabs, most recently used first, with favicon, title,
-    and hostname; `Enter` switches to the tab.
+    and hostname. Actions: switch to the tab, or close it.
   - **Commands** — *Close duplicated tabs*, *Keep single tab per site*,
-    and *Group sites by main domain / hostname* (toggles whether sites
-    are grouped per subdomain or per registrable domain, e.g.
-    `mail.google.com` + `docs.google.com` → `google.com`; remembered).
+    *Group all tabs by site* (one Chrome tab group per site), *Ungroup
+    all tabs*, *Merge all windows* (move every tab into the current
+    window), *Group sites by main domain / hostname* (toggles whether
+    sites are grouped per subdomain or per registrable domain, e.g.
+    `mail.google.com` + `docs.google.com` → `google.com`; remembered),
+    and *Preferences…*.
 
-  The status bar at the bottom always shows what `Enter` will do.
+  `←` / `→` cycle through the selected row's actions (when the caret is
+  at the edge of the search text), `Enter` runs the armed action, and the
+  status bar at the bottom always shows what `Enter` will do. Typing `/`
+  enters slash-command mode — only commands are listed, matched by their
+  alias (`/dedupe`, `/single`, `/group`, `/ungroup`, `/merge`, `/domain`,
+  `/prefs`).
 - **Go-to-tab hotkey** — `Cmd+Shift+Space` (Mac) / `Ctrl+Shift+Space`
   opens the same palette with the **Tabs** section on top for quick
   switching.
@@ -39,6 +47,8 @@ tabs, or keep only the latest tab per hostname.
     once, keeping the most recently used one.
   - **Keep single tab per hostname** — keeps only the latest tab per
     hostname, closes the rest.
+  - **Group all tabs by hostname** — one Chrome tab group per hostname.
+  - **Ungroup all tabs** / **Merge all windows**.
 
 Pinned tabs are never closed. The active tab is always the one kept when
 deduplicating.

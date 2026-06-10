@@ -69,6 +69,15 @@ const TabOps = {
     return this.groupBy((tab) => this.mainDomainOf(this.hostnameOf(tab)));
   },
 
+  // Most recently used tab of a group; the active tab always wins.
+  latestOf(tabs) {
+    return tabs.reduce((best, t) => {
+      if (t.active && !best.active) return t;
+      if (!t.active && best.active) return best;
+      return (t.lastAccessed || 0) > (best.lastAccessed || 0) ? t : best;
+    });
+  },
+
   async closeGroup(groups, key) {
     const tabs = groups.get(key) || [];
     const ids = tabs.filter((t) => !t.pinned).map((t) => t.id);
@@ -82,6 +91,92 @@ const TabOps = {
 
   async closeByMainDomain(domain) {
     return this.closeGroup(await this.groupByMainDomain(), domain);
+  },
+
+  // Close all but the latest tab of one site.
+  async keepLatestInGroup(groups, key) {
+    const tabs = groups.get(key) || [];
+    if (tabs.length < 2) return 0;
+    const keep = this.latestOf(tabs);
+    const ids = tabs.filter((t) => t.id !== keep.id && !t.pinned).map((t) => t.id);
+    if (ids.length) await chrome.tabs.remove(ids);
+    return ids.length;
+  },
+
+  GROUP_COLORS: ["grey", "blue", "red", "yellow", "green", "pink", "purple", "cyan", "orange"],
+
+  groupColorFor(name) {
+    let h = 0;
+    for (const c of name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    return this.GROUP_COLORS[h % this.GROUP_COLORS.length];
+  },
+
+  // Put tabs into Chrome tab groups titled by site. Tab groups are
+  // per-window, so each site groups within each window separately.
+  // With onlyKey set, groups that one site even if it has a single tab;
+  // otherwise only sites with 2+ tabs in a window get a group.
+  async groupIntoTabGroups(groups, onlyKey = null) {
+    let grouped = 0;
+    for (const [name, tabs] of groups) {
+      if (onlyKey !== null && name !== onlyKey) continue;
+      const byWindow = new Map();
+      for (const t of tabs) {
+        if (t.pinned) continue; // grouping would unpin them
+        if (!byWindow.has(t.windowId)) byWindow.set(t.windowId, []);
+        byWindow.get(t.windowId).push(t);
+      }
+      for (const [windowId, winTabs] of byWindow) {
+        if (onlyKey === null && winTabs.length < 2) continue;
+        const groupId = await chrome.tabs.group({
+          tabIds: winTabs.map((t) => t.id),
+          createProperties: { windowId },
+        });
+        await chrome.tabGroups.update(groupId, {
+          title: name,
+          color: this.groupColorFor(name),
+        });
+        grouped += winTabs.length;
+      }
+    }
+    return grouped;
+  },
+
+  // Move every tab into the current window. Pinned tabs stay pinned;
+  // tab groups move as units so they survive the merge.
+  async mergeAllWindows() {
+    const current = await chrome.windows.getLastFocused({ windowTypes: ["normal"] });
+    const tabs = await this.allTabs();
+    const others = tabs.filter((t) => t.windowId !== current.id);
+    if (!others.length) return 0;
+
+    const pinned = others.filter((t) => t.pinned);
+    const groupIds = [...new Set(
+      others.filter((t) => t.groupId !== undefined && t.groupId !== -1).map((t) => t.groupId)
+    )];
+    const loose = others.filter(
+      (t) => !t.pinned && (t.groupId === undefined || t.groupId === -1)
+    );
+
+    for (const t of pinned) {
+      await chrome.tabs.move(t.id, { windowId: current.id, index: 0 });
+      await chrome.tabs.update(t.id, { pinned: true }); // moving unpins
+    }
+    for (const groupId of groupIds) {
+      await chrome.tabGroups.move(groupId, { windowId: current.id, index: -1 });
+    }
+    if (loose.length) {
+      await chrome.tabs.move(loose.map((t) => t.id), { windowId: current.id, index: -1 });
+    }
+    return others.length;
+  },
+
+  async ungroupAll() {
+    const tabs = await this.allTabs();
+    const ids = tabs
+      .filter((t) => t.groupId !== undefined && t.groupId !== -1)
+      .map((t) => t.id);
+    if (ids.length) await chrome.tabs.ungroup(ids);
+    return ids.length;
   },
 
   // Close tabs whose URL already appeared in another tab.
@@ -98,11 +193,7 @@ const TabOps = {
     const toClose = [];
     for (const group of byUrl.values()) {
       if (group.length < 2) continue;
-      const keep = group.reduce((best, t) => {
-        if (t.active && !best.active) return t;
-        if (!t.active && best.active) return best;
-        return (t.lastAccessed || 0) > (best.lastAccessed || 0) ? t : best;
-      });
+      const keep = this.latestOf(group);
       for (const t of group) {
         if (t.id !== keep.id && !t.pinned) toClose.push(t.id);
       }
@@ -118,11 +209,7 @@ const TabOps = {
     const toClose = [];
     for (const group of groups.values()) {
       if (group.length < 2) continue;
-      const keep = group.reduce((best, t) => {
-        if (t.active && !best.active) return t;
-        if (!t.active && best.active) return best;
-        return (t.lastAccessed || 0) > (best.lastAccessed || 0) ? t : best;
-      });
+      const keep = this.latestOf(group);
       for (const t of group) {
         if (t.id !== keep.id && !t.pinned) toClose.push(t.id);
       }

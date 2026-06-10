@@ -23,6 +23,18 @@ let tabsFirst = false; // set when opened via the go-to-tab hotkey
 let items = [];
 let filtered = [];
 let selectedIndex = 0;
+let actionIndex = 0; // which of the selected row's actions is armed
+
+function setSelected(i) {
+  if (i !== selectedIndex) actionIndex = 0;
+  selectedIndex = i;
+}
+
+function currentGroups() {
+  return groupMode === "domain"
+    ? TabOps.groupByMainDomain()
+    : TabOps.groupByHostname();
+}
 
 function faviconFor(tab) {
   if (tab.favIconUrl && /^(https?|data):/.test(tab.favIconUrl)) {
@@ -35,11 +47,18 @@ function faviconFor(tab) {
   return url.toString();
 }
 
+const SITE_ACTIONS = [
+  { id: "close", label: "Close all" },
+  { id: "group", label: "Group tabs" },
+  { id: "keep", label: "Keep latest" },
+];
+const TAB_ACTIONS = [
+  { id: "switch", label: "Switch" },
+  { id: "close", label: "Close tab" },
+];
+
 async function refresh() {
-  const groups =
-    groupMode === "domain"
-      ? await TabOps.groupByMainDomain()
-      : await TabOps.groupByHostname();
+  const groups = await currentGroups();
   const sites = [...groups.entries()].map(([host, tabs]) => ({
     kind: "site",
     label: host,
@@ -47,6 +66,7 @@ async function refresh() {
     count: tabs.length,
     icon: faviconFor(tabs.find((t) => t.favIconUrl) || tabs[0]),
     host,
+    actions: SITE_ACTIONS,
   }));
 
   const allTabs = await TabOps.allTabs();
@@ -58,12 +78,14 @@ async function refresh() {
     icon: faviconFor(t),
     tabId: t.id,
     windowId: t.windowId,
+    actions: TAB_ACTIONS,
   }));
 
   const commands = [
     {
       kind: "command",
       id: "dupes",
+      slash: "dedupe",
       label: "Close duplicated tabs",
       sub: "Keep one tab per exact URL",
       glyph: "⧉",
@@ -71,6 +93,7 @@ async function refresh() {
     {
       kind: "command",
       id: "single",
+      slash: "single",
       label: "Keep single tab per site",
       sub: "Keep only the latest tab of each site",
       glyph: "◎",
@@ -78,6 +101,7 @@ async function refresh() {
     {
       kind: "command",
       id: "group",
+      slash: "domain",
       label:
         groupMode === "domain"
           ? "Group sites by hostname"
@@ -90,7 +114,32 @@ async function refresh() {
     },
     {
       kind: "command",
+      id: "tabgroups",
+      slash: "group",
+      label: "Group all tabs by site",
+      sub: `One tab group per ${groupMode === "domain" ? "main domain" : "hostname"} (2+ tabs)`,
+      glyph: "▦",
+    },
+    {
+      kind: "command",
+      id: "ungroup",
+      slash: "ungroup",
+      label: "Ungroup all tabs",
+      sub: "Remove every tab group",
+      glyph: "▢",
+    },
+    {
+      kind: "command",
+      id: "merge",
+      slash: "merge",
+      label: "Merge all windows",
+      sub: "Move every tab into this window",
+      glyph: "⧈",
+    },
+    {
+      kind: "command",
       id: "prefs",
+      slash: "prefs",
       label: "Preferences…",
       sub: "Sites that always switch to the existing tab",
       glyph: "⚙",
@@ -104,15 +153,25 @@ async function refresh() {
 }
 
 function applyFilter() {
-  const q = searchEl.value.trim().toLowerCase();
-  filtered = q
-    ? items.filter(
-        (e) =>
-          e.label.toLowerCase().includes(q) ||
-          (e.sub || "").toLowerCase().includes(q)
-      )
-    : items;
-  selectedIndex = Math.min(selectedIndex, Math.max(0, filtered.length - 1));
+  const raw = searchEl.value.trim().toLowerCase();
+  if (raw.startsWith("/")) {
+    // slash mode: commands only, matched by alias or label
+    const q = raw.slice(1);
+    filtered = items.filter(
+      (e) =>
+        e.kind === "command" &&
+        (e.slash.startsWith(q) || e.label.toLowerCase().includes(q))
+    );
+  } else {
+    filtered = raw
+      ? items.filter(
+          (e) =>
+            e.label.toLowerCase().includes(raw) ||
+            (e.sub || "").toLowerCase().includes(raw)
+        )
+      : items;
+  }
+  setSelected(Math.min(selectedIndex, Math.max(0, filtered.length - 1)));
   render();
 }
 
@@ -159,17 +218,27 @@ function render() {
     }
     li.append(text);
 
-    if (entry.kind === "site") {
+    if (i === selectedIndex && entry.actions?.length > 1) {
+      const action = document.createElement("span");
+      action.className = "action";
+      action.textContent = `◂ ${entry.actions[actionIndex].label} ▸`;
+      li.append(action);
+    } else if (entry.kind === "site") {
       const count = document.createElement("span");
       count.className = "count";
       count.textContent = entry.count;
       li.append(count);
+    } else if (entry.kind === "command") {
+      const slash = document.createElement("span");
+      slash.className = "count";
+      slash.textContent = "/" + entry.slash;
+      li.append(slash);
     }
 
     li.addEventListener("click", () => activate(entry));
     li.addEventListener("mousemove", () => {
       if (selectedIndex !== i) {
-        selectedIndex = i;
+        setSelected(i);
         render();
       }
     });
@@ -187,13 +256,23 @@ function updateStatus() {
   }
   const entry = filtered[selectedIndex];
   if (!entry) return;
+  const action = entry.actions?.[actionIndex]?.id;
+  const n = entry.count;
+  let text;
   if (entry.kind === "site") {
-    statusEl.textContent = `↵  Close ${entry.count} tab${entry.count === 1 ? "" : "s"} on ${entry.host}`;
+    text =
+      action === "group"
+        ? `↵  Group ${n} tab${n === 1 ? "" : "s"} on ${entry.host} into a tab group`
+        : action === "keep"
+          ? `↵  Keep latest tab on ${entry.host}, close the rest`
+          : `↵  Close ${n} tab${n === 1 ? "" : "s"} on ${entry.host}`;
   } else if (entry.kind === "tab") {
-    statusEl.textContent = "↵  Switch to this tab";
+    text = action === "close" ? "↵  Close this tab" : "↵  Switch to this tab";
   } else {
-    statusEl.textContent = "↵  Run command";
+    text = "↵  Run command";
   }
+  if (entry.actions?.length > 1) text += "  ·  ◂ ▸ actions";
+  statusEl.textContent = text;
 }
 
 function flash(msg) {
@@ -202,13 +281,32 @@ function flash(msg) {
 }
 
 async function activate(entry) {
+  const action = entry.actions?.[actionIndex]?.id;
   if (entry.kind === "tab") {
+    if (action === "close") {
+      await chrome.tabs.remove(entry.tabId);
+      await refresh();
+      flash("Closed tab");
+      return;
+    }
     await chrome.tabs.update(entry.tabId, { active: true });
     await chrome.windows.update(entry.windowId, { focused: true });
     window.close();
     return;
   }
   if (entry.kind === "site") {
+    if (action === "group") {
+      const grouped = await TabOps.groupIntoTabGroups(await currentGroups(), entry.host);
+      await refresh();
+      flash(`Grouped ${grouped} tab${grouped === 1 ? "" : "s"} on ${entry.host}`);
+      return;
+    }
+    if (action === "keep") {
+      const closed = await TabOps.keepLatestInGroup(await currentGroups(), entry.host);
+      await refresh();
+      flash(`Closed ${closed} tab${closed === 1 ? "" : "s"} on ${entry.host}`);
+      return;
+    }
     const closed =
       groupMode === "domain"
         ? await TabOps.closeByMainDomain(entry.host)
@@ -218,7 +316,20 @@ async function activate(entry) {
     flash(`Closed ${closed} tab${closed === 1 ? "" : "s"} on ${entry.host}`);
     return;
   }
-  if (entry.id === "dupes") {
+  searchEl.value = ""; // leave slash mode after running a command
+  if (entry.id === "tabgroups") {
+    const grouped = await TabOps.groupIntoTabGroups(await currentGroups());
+    await refresh();
+    flash(`Grouped ${grouped} tab${grouped === 1 ? "" : "s"} by site`);
+  } else if (entry.id === "ungroup") {
+    const n = await TabOps.ungroupAll();
+    await refresh();
+    flash(`Ungrouped ${n} tab${n === 1 ? "" : "s"}`);
+  } else if (entry.id === "merge") {
+    const n = await TabOps.mergeAllWindows();
+    await refresh();
+    flash(`Moved ${n} tab${n === 1 ? "" : "s"} into this window`);
+  } else if (entry.id === "dupes") {
     const closed = await TabOps.closeDuplicates();
     await refresh();
     flash(`Closed ${closed} duplicated tab${closed === 1 ? "" : "s"}`);
@@ -240,16 +351,33 @@ async function activate(entry) {
 }
 
 function moveSelection(delta) {
-  selectedIndex = Math.max(
-    0,
-    Math.min(selectedIndex + delta, filtered.length - 1)
+  setSelected(
+    Math.max(0, Math.min(selectedIndex + delta, filtered.length - 1))
   );
   render();
   listEl.querySelector(".selected")?.scrollIntoView({ block: "nearest" });
 }
 
+// Cycle the selected row's action, but only when the key would not move
+// the caret anyway (Right at end of input, Left at start) so text editing
+// keeps working.
+function cycleAction(delta) {
+  const entry = filtered[selectedIndex];
+  if (!entry?.actions || entry.actions.length < 2) return false;
+  const caretAtEnd =
+    searchEl.selectionStart === searchEl.value.length &&
+    searchEl.selectionEnd === searchEl.value.length;
+  const caretAtStart = searchEl.selectionStart === 0 && searchEl.selectionEnd === 0;
+  if (delta > 0 && !caretAtEnd) return false;
+  if (delta < 0 && !caretAtStart) return false;
+  const len = entry.actions.length;
+  actionIndex = (actionIndex + delta + len) % len;
+  render();
+  return true;
+}
+
 searchEl.addEventListener("input", () => {
-  selectedIndex = 0;
+  setSelected(0);
   applyFilter();
 });
 
@@ -260,6 +388,10 @@ searchEl.addEventListener("keydown", (e) => {
   } else if (e.key === "ArrowUp") {
     e.preventDefault();
     moveSelection(-1);
+  } else if (e.key === "ArrowRight") {
+    if (cycleAction(1)) e.preventDefault();
+  } else if (e.key === "ArrowLeft") {
+    if (cycleAction(-1)) e.preventDefault();
   } else if (e.key === "Enter") {
     e.preventDefault();
     if (filtered[selectedIndex]) activate(filtered[selectedIndex]);

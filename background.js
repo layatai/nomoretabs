@@ -5,6 +5,9 @@ const MENU_BY_HOST = "nmt-by-host";
 const MENU_BY_DOMAIN = "nmt-by-domain";
 const MENU_DUPES = "nmt-dupes";
 const MENU_SINGLE = "nmt-single";
+const MENU_GROUP = "nmt-group";
+const MENU_UNGROUP = "nmt-ungroup";
+const MENU_MERGE = "nmt-merge";
 const HOST_PREFIX = "nmt-host:";
 const DOMAIN_PREFIX = "nmt-domain:";
 
@@ -82,6 +85,24 @@ async function rebuildMenus() {
       title: "Keep single tab per hostname",
       contexts: ["page", "action"],
     });
+    chrome.contextMenus.create({
+      id: MENU_GROUP,
+      parentId: MENU_ROOT,
+      title: "Group all tabs by hostname",
+      contexts: ["page", "action"],
+    });
+    chrome.contextMenus.create({
+      id: MENU_UNGROUP,
+      parentId: MENU_ROOT,
+      title: "Ungroup all tabs",
+      contexts: ["page", "action"],
+    });
+    chrome.contextMenus.create({
+      id: MENU_MERGE,
+      parentId: MENU_ROOT,
+      title: "Merge all windows",
+      contexts: ["page", "action"],
+    });
   } finally {
     rebuilding = false;
     if (rebuildQueued) {
@@ -96,6 +117,12 @@ chrome.contextMenus.onClicked.addListener(async (info) => {
     await TabOps.closeDuplicates();
   } else if (info.menuItemId === MENU_SINGLE) {
     await TabOps.keepSingleTabPerHostname();
+  } else if (info.menuItemId === MENU_GROUP) {
+    await TabOps.groupIntoTabGroups(await TabOps.groupByHostname());
+  } else if (info.menuItemId === MENU_UNGROUP) {
+    await TabOps.ungroupAll();
+  } else if (info.menuItemId === MENU_MERGE) {
+    await TabOps.mergeAllWindows();
   } else if (String(info.menuItemId).startsWith(HOST_PREFIX)) {
     await TabOps.closeByHostname(String(info.menuItemId).slice(HOST_PREFIX.length));
   } else if (String(info.menuItemId).startsWith(DOMAIN_PREFIX)) {
