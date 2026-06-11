@@ -2,26 +2,101 @@
 <html>
 <head>
   <meta charset="utf-8" />
+  <title>No More Tabs — Preferences</title>
   <link rel="stylesheet" href="options.css" />
 </head>
 <body>
-  <h1>Always switch to existing tab</h1>
-  <p>
-    For these sites, opening the site in a new tab switches to the
-    already-open tab instead (the new tab is closed). An entry like
-    <code>google.com</code> also covers its subdomains.
-  </p>
-  <form id="add-form">
-    <input
-      id="add-input"
-      type="text"
-      placeholder="example.com — Enter to add"
-      autocomplete="off"
-      spellcheck="false"
-    />
-  </form>
-  <ul id="host-list"></ul>
-  <div id="empty">No sites yet. Add one above.</div>
+  <main>
+    <header>
+      <img src="icons/icon48.png" alt="" width="36" height="36" />
+      <div>
+        <h1>No More Tabs</h1>
+        <p id="version"></p>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>General</h2>
+
+      <div class="row">
+        <div class="row-text">
+          <label for="mode-host">Group sites by</label>
+          <p>
+            How tabs are grouped into “sites” in the palette and menus.
+            Main domain folds subdomains together, e.g.
+            <code>mail.google.com</code> + <code>docs.google.com</code> →
+            <code>google.com</code>.
+          </p>
+        </div>
+        <div class="segmented" role="radiogroup">
+          <input type="radio" name="groupMode" id="mode-host" value="host" />
+          <label for="mode-host">Hostname</label>
+          <input type="radio" name="groupMode" id="mode-domain" value="domain" />
+          <label for="mode-domain">Main domain</label>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="row-text">
+          <label for="autocomplete">Inline autocomplete</label>
+          <p>
+            Complete hostnames in the search box from your open tabs and
+            browsing history, like the address bar.
+          </p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="autocomplete" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="row">
+        <div class="row-text">
+          <label>Keyboard shortcuts</label>
+          <p>
+            <kbd id="key-palette"></kbd> open the palette ·
+            <kbd id="key-goto"></kbd> go to tab
+          </p>
+        </div>
+        <button id="shortcuts" class="button">Customize…</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Always switch to existing tab</h2>
+      <p class="card-desc">
+        For these sites, opening the site in a new tab focuses the
+        already-open tab instead (the duplicate closes, the existing tab
+        loads the requested page). An entry like <code>google.com</code>
+        also covers its subdomains. Click an entry to edit it; clear it or
+        press ✕ to remove. Synced across your browsers.
+      </p>
+      <form id="add-form">
+        <input
+          id="add-input"
+          type="text"
+          placeholder="example.com — Enter to add"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </form>
+      <ul id="host-list"></ul>
+      <div id="empty">No sites yet. Add one above.</div>
+    </section>
+
+    <section class="card">
+      <h2>About</h2>
+      <p class="card-desc">
+        Pinned tabs are never closed, grouped, or moved. “Latest” always
+        means the most recently used tab, and the active tab wins.
+      </p>
+      <div class="links">
+        <a href="https://github.com/layatai/nomoretabs" target="_blank">GitHub</a>
+        <a href="https://github.com/layatai/nomoretabs/releases" target="_blank">Releases</a>
+        <a href="https://github.com/layatai/nomoretabs/issues" target="_blank">Report an issue</a>
+      </div>
+    </section>
+  </main>
   <script src="options.js"></script>
 </body>
 </html>

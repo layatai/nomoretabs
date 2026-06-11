@@ -19,7 +19,8 @@ const SECTION_TITLES = {
   open: "Open",
 };
 
-let groupMode = localStorage.getItem("nmt-mode") === "domain" ? "domain" : "host";
+let groupMode = "host"; // loaded from chrome.storage.sync at init
+let acEnabled = true;
 let tabsFirst = false; // set when opened via the go-to-tab hotkey
 let items = [];
 let filtered = [];
@@ -33,6 +34,7 @@ let acToken = 0;
 // it and Enter uses it. Candidates: open tabs' hostnames first, then
 // browser history by visit count.
 async function autocomplete() {
+  if (!acEnabled) return;
   const token = ++acToken;
   const typed = searchEl.value;
   const q = typed.toLowerCase();
@@ -441,7 +443,7 @@ async function activate(entry) {
     return;
   } else if (entry.id === "group") {
     groupMode = groupMode === "domain" ? "host" : "domain";
-    localStorage.setItem("nmt-mode", groupMode);
+    chrome.storage.sync.set({ groupMode });
     await refresh();
     flash(`Grouping sites by ${groupMode === "domain" ? "main domain" : "hostname"}`);
   }
@@ -507,9 +509,18 @@ searchEl.addEventListener("keydown", (e) => {
   }
 });
 
-// The go-to-tab hotkey sets a flag before opening the popup.
-chrome.storage.session.get("nmt-open-view").then(({ "nmt-open-view": v }) => {
+// Load settings and the go-to-tab flag set by the hotkey, then render.
+Promise.all([
+  chrome.storage.sync.get({
+    // migrate the old localStorage preference on first read
+    groupMode: localStorage.getItem("nmt-mode") === "domain" ? "domain" : "host",
+    autocomplete: true,
+  }),
+  chrome.storage.session.get("nmt-open-view"),
+]).then(([settings, session]) => {
+  groupMode = settings.groupMode;
+  acEnabled = settings.autocomplete;
   chrome.storage.session.remove("nmt-open-view");
-  tabsFirst = v === "goto";
+  tabsFirst = session["nmt-open-view"] === "goto";
   refresh().then(() => searchEl.focus());
 });

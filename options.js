@@ -16,7 +16,51 @@ function normalize(value) {
   return v;
 }
 
-async function load() {
+function faviconFor(host) {
+  const url = new URL(chrome.runtime.getURL("/_favicon/"));
+  url.searchParams.set("pageUrl", "https://" + host + "/");
+  url.searchParams.set("size", "16");
+  return url.toString();
+}
+
+// ---- general settings ----
+
+async function loadSettings() {
+  const s = await chrome.storage.sync.get({ groupMode: "host", autocomplete: true });
+  document.getElementById(
+    s.groupMode === "domain" ? "mode-domain" : "mode-host"
+  ).checked = true;
+  document.getElementById("autocomplete").checked = s.autocomplete;
+}
+
+for (const id of ["mode-host", "mode-domain"]) {
+  document.getElementById(id).addEventListener("change", (e) => {
+    if (e.target.checked) chrome.storage.sync.set({ groupMode: e.target.value });
+  });
+}
+
+document.getElementById("autocomplete").addEventListener("change", (e) => {
+  chrome.storage.sync.set({ autocomplete: e.target.checked });
+});
+
+document.getElementById("shortcuts").addEventListener("click", () => {
+  chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
+});
+
+async function loadShortcuts() {
+  const commands = await chrome.commands.getAll();
+  const get = (name) =>
+    commands.find((c) => c.name === name)?.shortcut || "unset";
+  document.getElementById("key-palette").textContent = get("_execute_action");
+  document.getElementById("key-goto").textContent = get("open-goto-palette");
+}
+
+document.getElementById("version").textContent =
+  "v" + chrome.runtime.getManifest().version;
+
+// ---- enforced switch-to-tab list ----
+
+async function loadHosts() {
   ({ enforcedHosts: hosts } = await chrome.storage.sync.get({
     enforcedHosts: [],
   }));
@@ -33,6 +77,10 @@ function render() {
   listEl.replaceChildren(
     ...hosts.map((host, i) => {
       const li = document.createElement("li");
+
+      const icon = document.createElement("img");
+      icon.src = faviconFor(host);
+      icon.alt = "";
 
       const edit = document.createElement("input");
       edit.type = "text";
@@ -57,7 +105,7 @@ function render() {
         save();
       });
 
-      li.append(edit, remove);
+      li.append(icon, edit, remove);
       return li;
     })
   );
@@ -74,4 +122,6 @@ document.getElementById("add-form").addEventListener("submit", (e) => {
   inputEl.focus();
 });
 
-load();
+loadSettings();
+loadShortcuts();
+loadHosts();
