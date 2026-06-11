@@ -158,9 +158,48 @@ function enforcedEntryFor(host) {
 // "browsing within it". Re-seeded when the service worker restarts.
 const lastHostByTab = new Map();
 
+// --- Local hostname-frequency index --------------------------------------
+// Learned from tab navigations (no history permission): host -> visit
+// count + last-seen time. Powers the palette's inline autocomplete.
+
+let hostStats = null;
+let statsTimer = null;
+
+async function loadHostStats() {
+  if (!hostStats) {
+    ({ hostStats } = await chrome.storage.local.get({ hostStats: {} }));
+  }
+  return hostStats;
+}
+
+function scheduleStatsSave() {
+  clearTimeout(statsTimer);
+  statsTimer = setTimeout(async () => {
+    // cap the index; keep the most recently seen hosts
+    const entries = Object.entries(hostStats);
+    if (entries.length > 500) {
+      entries.sort((a, b) => (b[1].t || 0) - (a[1].t || 0));
+      hostStats = Object.fromEntries(entries.slice(0, 500));
+    }
+    await chrome.storage.local.set({ hostStats });
+  }, 1500);
+}
+
+async function recordHost(host, increment = true) {
+  if (!host) return;
+  await loadHostStats();
+  const e = hostStats[host] || { n: 0 };
+  if (increment || !hostStats[host]) e.n++;
+  e.t = Date.now();
+  hostStats[host] = e;
+  scheduleStatsSave();
+}
+
 async function seedLastHosts() {
   for (const tab of await TabOps.allTabs()) {
-    lastHostByTab.set(tab.id, TabOps.hostnameOf(tab));
+    const host = TabOps.hostnameOf(tab);
+    lastHostByTab.set(tab.id, host);
+    recordHost(host, false); // ensure open tabs are known, don't inflate counts
   }
 }
 seedLastHosts();
@@ -177,6 +216,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
   }
   const prevHost = lastHostByTab.get(tabId);
   lastHostByTab.set(tabId, host);
+  if (host !== prevHost) recordHost(host); // count entering a site as a visit
 
   const entry = enforcedEntryFor(host);
   if (!entry) return;

@@ -47,17 +47,13 @@ async function autocomplete() {
   }
   const candidates = items.filter((e) => e.kind === "site").map((e) => e.host);
   try {
-    const hist = await chrome.history.search({
-      text: q,
-      maxResults: 50,
-      startTime: 0,
-    });
-    hist.sort((a, b) => (b.visitCount || 0) - (a.visitCount || 0));
-    for (const h of hist) {
-      try {
-        candidates.push(new URL(h.url).hostname);
-      } catch {}
-    }
+    // hosts learned by the background worker from tab navigations
+    const { hostStats = {} } = await chrome.storage.local.get("hostStats");
+    candidates.push(
+      ...Object.entries(hostStats)
+        .sort((a, b) => (b[1].n || 0) - (a[1].n || 0))
+        .map(([host]) => host)
+    );
   } catch {}
   let match = "";
   outer: for (const c of candidates) {

@@ -30,8 +30,9 @@ all with site favicons and filtered live as you type:
 - The status bar always previews exactly what `Enter` will do.
 - **Inline autocomplete**, like the address bar: as you type, the rest of
   the best-matching hostname is filled in as selected text (`v` →
-  `v∣nexpress.net`), completed from your open tabs and browser history
-  (most-visited first). Keep typing to replace it, `Tab` or `→` to accept,
+  `v∣nexpress.net`), completed from your open tabs and a small local
+  index of hostnames learned as you browse (no history permission; most
+  visited first). Keep typing to replace it, `Tab` or `→` to accept,
   `Backspace` to drop it. The **Open** row follows the completion.
 - The **Open** row completes URLs terminal-style: `github/foo` →
   `https://github.com/foo` (a bare word gets `.com`); schemes and ports

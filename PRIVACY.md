@@ -10,10 +10,13 @@ and organize tabs. It is designed to work entirely on your device.
 - **Tabs** (`tabs` permission): titles, URLs, and favicons of your open
   tabs, used to build the site list, the tab switcher, duplicate
   detection, and tab groups.
-- **Browsing history** (`history` permission): read locally — never
-  transmitted — solely to power inline hostname autocomplete in the
-  search box (e.g. typing `goo` completes to `google.com`). It can be
-  turned off in Preferences → Inline autocomplete.
+- **Visited hostnames**: to power inline autocomplete in the search box
+  (e.g. typing `goo` completes to `google.com`), the extension keeps a
+  small local index of hostnames you visit while it is installed (at most
+  500 hostnames with visit counts, stored on your device via
+  `chrome.storage.local`). It does not read your browser history and has
+  no `history` permission. Autocomplete can be turned off in
+  Preferences → Inline autocomplete.
 - **Favicons** (`favicon` permission): the browser's local favicon cache,
   used to show site icons in the palette.
 - **Storage** (`storage` permission): your preferences (site grouping

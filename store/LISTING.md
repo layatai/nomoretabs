@@ -40,7 +40,8 @@ Use ← → to pick the action.
 
 ⌨️ ADDRESS-BAR AUTOCOMPLETE
 Type "v" and the palette completes "vnexpress.net" inline from your open
-tabs and history — Tab or → accepts. If a URL isn't open, an Open row
+tabs and the sites you visit — Tab or → accepts. (No history permission:
+the extension learns hostnames locally as you browse.) If a URL isn't open, an Open row
 creates the tab (terminal-style completion: "github/foo" →
 https://github.com/foo). Autocomplete can be disabled in Preferences.
 
@@ -87,9 +88,6 @@ English
   toggle, the switch-to-existing-tab site list) via chrome.storage.sync.
 - **favicon** — Shows site icons in the palette list from the browser's
   local favicon cache.
-- **history** — Read locally, only to inline-autocomplete hostnames in
-  the palette search box from the user's most-visited sites. Never
-  transmitted. User-disableable in Preferences.
 
 ### Data usage disclosures
 
